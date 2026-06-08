@@ -1,6 +1,6 @@
-,Accuracy,Precision,Recall,F1-Score,ROC-AUC
-Logistic Regression,95.67,95.71,95.04,95.37,99.33
-Random Forest,95.67,95.07,95.74,95.41,98.64
-SVM,94.67,94.33,94.33,94.33,98.42
-Gradient Boosting,95.0,93.75,95.74,94.74,99.15
-Neural Network,95.33,95.04,95.04,95.04,98.72
+,Accuracy,Precision,Recall,F1-Score,ROC-AUC,CV Score
+Logistic Regression,68.67,60.0,41.28,48.91,74.42,73.42
+Random Forest,69.67,61.54,44.04,51.34,73.65,71.58
+SVM,71.0,65.28,43.12,51.93,72.51,71.92
+Gradient Boosting,66.33,54.44,44.95,49.25,70.21,70.42
+Neural Network (TF),67.33,56.47,44.04,49.48,71.08,0.0
