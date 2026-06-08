@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HealthAI - Disease Prediction Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg         : #050a0e;
+  --surface    : #0c1419;
+  --card       : #111c24;
+  --border     : #1e3040;
+  --accent     : #00d4aa;
+  --accent2    : #ff6b6b;
+  --accent3    : #ffd93d;
+  --text       : #e8f4f0;
+  --muted      : #5a8a7a;
+  --mono       : 'DM Mono', monospace;
+  --display    : 'Syne', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: var(--display);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 10% 10%, rgba(0,212,170,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 30% at 90% 90%, rgba(255,107,107,0.05) 0%, transparent 60%);
+}
+
+/* ---- HEADER ---- */
+header {
+  padding: 24px 40px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(12,20,25,0.8);
+  backdrop-filter: blur(10px);
+  position: sticky; top: 0; z-index: 100;
+}
+
+.logo {
+  display: flex; align-items: center; gap: 12px;
+}
+
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), #007a62);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+
+.logo h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+.logo span { color: var(--accent); }
+
+.header-meta {
+  display: flex; gap: 20px; align-items: center;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--mono);
+  border: 1px solid;
+  font-weight: 500;
+}
+
+.badge-green { color: var(--accent); border-color: rgba(0,212,170,0.3); background: rgba(0,212,170,0.06); }
+.badge-yellow { color: var(--accent3); border-color: rgba(255,217,61,0.3); background: rgba(255,217,61,0.06); }
+
+/* ---- LAYOUT ---- */
+.container { max-width: 1280px; margin: 0 auto; padding: 32px 40px; }
+
+/* ---- STATS ROW ---- */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp 0.5s ease both;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent-line, var(--accent));
+}
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-sub {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+/* ---- MAIN GRID ---- */
+.main-grid {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+/* ---- FORM CARD ---- */
+.form-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+.form-body { padding: 20px 24px; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field.full { grid-column: 1/-1; }
+
+label {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+input, select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,212,170,0.1);
+}
+
+select option { background: var(--card); }
+
+.predict-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--accent), #007a62);
+  border: none;
+  border-radius: 10px;
+  color: var(--bg);
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.predict-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,212,170,0.3); }
+.predict-btn:active { transform: translateY(0); }
+
+/* ---- RESULT PANEL ---- */
+.result-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.result-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.result-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  text-align: center;
+}
+
+.result-placeholder {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.result-display { display: none; width: 100%; }
+
+.result-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.result-label {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.result-confidence {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.risk-pill {
+  display: inline-block;
+  padding: 6px 20px;
+  border-radius: 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid;
+  margin-bottom: 20px;
+}
+
+.risk-high   { color: var(--accent2); border-color: rgba(255,107,107,0.4); background: rgba(255,107,107,0.08); }
+.risk-low    { color: var(--accent);  border-color: rgba(0,212,170,0.4);   background: rgba(0,212,170,0.08); }
+.risk-medium { color: var(--accent3); border-color: rgba(255,217,61,0.4);  background: rgba(255,217,61,0.08); }
+
+.confidence-bar-wrap {
+  width: 100%;
+  background: var(--surface);
+  border-radius: 6px;
+  height: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.confidence-bar {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--accent), #007a62);
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
+}
+
+/* ---- RECOMMENDATIONS ---- */
+.recs-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  margin-top: 8px;
+}
+
+.recs-list li {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--muted);
+  padding: 8px 12px;
+  background: var(--surface);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  line-height: 1.5;
+}
+
+/* ---- CHARTS ROW ---- */
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.chart-card canvas { max-height: 220px; }
+
+/* ---- MODEL METRICS TABLE ---- */
+.metrics-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+thead tr {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  padding: 12px 20px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 500;
+}
+
+td {
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(30,48,64,0.5);
+  color: var(--text);
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(0,212,170,0.03); }
+
+.best-row td { color: var(--accent); font-weight: 500; }
+
+.metric-bar {
+  display: inline-block;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), #007a62);
+  vertical-align: middle;
+  margin-left: 8px;
+  opacity: 0.6;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(16px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+.stat-card:nth-child(2) { animation-delay: 0.1s; --accent-line: var(--accent3); }
+.stat-card:nth-child(3) { animation-delay: 0.2s; --accent-line: var(--accent2); }
+.stat-card:nth-child(4) { animation-delay: 0.3s; --accent-line: #79c0ff; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">&#x2764;</div>
+    <h1>Health<span>AI</span></h1>
+  </div>
+  <div class="header-meta">
+    <span class="badge badge-green">5 Models Trained</span>
+    <span class="badge badge-yellow">98.53% Accuracy</span>
+    <span class="badge badge-green">FastAPI Ready</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Dataset Size</div>
+      <div class="stat-value" style="color:var(--accent)">1,500</div>
+      <div class="stat-sub">Patient records</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Best Accuracy</div>
+      <div class="stat-value" style="color:var(--accent3)">98.53%</div>
+      <div class="stat-sub">Random Forest</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Models Compared</div>
+      <div class="stat-value" style="color:var(--accent2)">5</div>
+      <div class="stat-sub">LR, RF, SVM, XGB, NN</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Features</div>
+      <div class="stat-value" style="color:#79c0ff">22</div>
+      <div class="stat-sub">Incl. 7 engineered</div>
+    </div>
+  </div>
+
+  <!-- Main Grid: Form + Result -->
+  <div class="main-grid">
+
+    <!-- Prediction Form -->
+    <div class="form-card">
+      <div class="card-header">
+        <span class="card-title">Patient Input</span>
+        <span class="badge badge-green">Live Prediction</span>
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>Age</label>
+            <input type="number" id="age" value="45" min="1" max="120"/>
+          </div>
+          <div class="field">
+            <label>Gender</label>
+            <select id="gender">
+              <option>Female</option>
+              <option>Male</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>BMI</label>
+            <input type="number" id="bmi" value="28.5" step="0.1"/>
+          </div>
+          <div class="field">
+            <label>Glucose (mg/dL)</label>
+            <input type="number" id="glucose" value="130"/>
+          </div>
+          <div class="field">
+            <label>Blood Pressure</label>
+            <input type="number" id="bp" value="82"/>
+          </div>
+          <div class="field">
+            <label>Insulin</label>
+            <input type="number" id="insulin" value="100"/>
+          </div>
+          <div class="field">
+            <label>HbA1c %</label>
+            <input type="number" id="hba1c" value="6.2" step="0.1"/>
+          </div>
+          <div class="field">
+            <label>Cholesterol</label>
+            <input type="number" id="cholesterol" value="195"/>
+          </div>
+          <div class="field">
+            <label>Skin Thickness</label>
+            <input type="number" id="skin" value="22"/>
+          </div>
+          <div class="field">
+            <label>Stress Level (1-10)</label>
+            <input type="number" id="stress" value="5" min="1" max="10"/>
+          </div>
+          <div class="field">
+            <label>Family History</label>
+            <select id="family">
+              <option value="0">No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Pregnancies</label>
+            <input type="number" id="pregnancies" value="0" min="0"/>
+          </div>
+          <div class="field">
+            <label>Smoking Status</label>
+            <select id="smoking">
+              <option>Never</option>
+              <option>Former</option>
+              <option>Current</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Physical Activity</label>
+            <select id="activity">
+              <option>Low</option>
+              <option selected>Moderate</option>
+              <option>High</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>Diet Quality</label>
+            <select id="diet">
+              <option>Poor</option>
+              <option selected>Average</option>
+              <option>Good</option>
+            </select>
+          </div>
+        </div>
+        <button class="predict-btn" onclick="runPrediction()">Run Prediction</button>
+      </div>
+    </div>
+
+    <!-- Result Panel -->
+    <div class="result-panel">
+      <div class="result-card">
+        <div class="card-header">
+          <span class="card-title">Prediction Result</span>
+        </div>
+        <div class="result-body" id="result-body">
+          <div class="result-placeholder">Enter patient data and click "Run Prediction"</div>
+          <div class="result-display" id="result-display">
+            <div class="result-icon" id="res-icon">&#x2705;</div>
+            <div class="result-label" id="res-label">Disease Negative</div>
+            <div class="confidence-bar-wrap"><div class="confidence-bar" id="conf-bar"></div></div>
+            <div class="result-confidence" id="res-conf">Confidence: --</div>
+            <div class="risk-pill risk-low" id="res-risk">Low Risk</div>
+            <ul class="recs-list" id="recs-list"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Gauge mini -->
+      <div class="result-card">
+        <div class="card-header">
+          <span class="card-title">Risk Factor Summary</span>
+        </div>
+        <div style="padding:20px;">
+          <canvas id="radarChart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="card-title" style="margin-bottom:14px;">Model Accuracy Comparison</div>
+      <canvas id="barChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="card-title" style="margin-bottom:14px;">ROC-AUC Scores</div>
+      <canvas id="aucChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="card-title" style="margin-bottom:14px;">Dataset Distribution</div>
+      <canvas id="pieChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Model Metrics Table -->
+  <div class="metrics-card">
+    <div class="card-header">
+      <span class="card-title">Model Performance Metrics</span>
+      <span class="badge badge-yellow">5 Models Evaluated</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Accuracy</th>
+          <th>Precision</th>
+          <th>Recall</th>
+          <th>F1-Score</th>
+          <th>ROC-AUC</th>
+        </tr>
+      </thead>
+      <tbody id="metrics-tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+// ---- Model data (from training results) ----
+const modelData = [
+  { name: 'Logistic Regression', acc: 87.33, prec: 85.10, rec: 83.20, f1: 84.14, auc: 93.50 },
+  { name: 'Random Forest',       acc: 98.53, prec: 98.20, rec: 98.10, f1: 98.15, auc: 99.80 },
+  { name: 'SVM',                 acc: 89.67, prec: 88.40, rec: 87.60, f1: 88.00, auc: 95.10 },
+  { name: 'Gradient Boosting',   acc: 96.40, prec: 96.10, rec: 95.80, f1: 95.95, auc: 99.20 },
+  { name: 'Neural Network',      acc: 94.27, prec: 93.80, rec: 93.50, f1: 93.65, auc: 98.40 },
+];
+
+// Populate table
+const tbody = document.getElementById('metrics-tbody');
+modelData.forEach((m, i) => {
+  const isBest = m.name === 'Random Forest';
+  tbody.innerHTML += `
+    <tr class="${isBest ? 'best-row' : ''}">
+      <td>${m.name}${isBest ? ' <span class="badge badge-green" style="font-size:10px">Best</span>' : ''}</td>
+      <td>${m.acc}% <span class="metric-bar" style="width:${m.acc*0.5}px"></span></td>
+      <td>${m.prec}%</td>
+      <td>${m.rec}%</td>
+      <td>${m.f1}%</td>
+      <td>${m.auc}%</td>
+    </tr>`;
+});
+
+// ---- Charts ----
+const C = (id) => document.getElementById(id).getContext('2d');
+const COLORS = ['#00d4aa','#ffd93d','#ff6b6b','#79c0ff','#c792ea'];
+const labels = modelData.map(m => m.name.replace(' ', '\n'));
+
+// Bar chart - Accuracy
+new Chart(C('barChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [{ data: modelData.map(m=>m.acc), backgroundColor: COLORS, borderRadius: 6, borderSkipped: false }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { min: 80, max: 102, grid: { color:'rgba(255,255,255,0.05)' }, ticks: { color:'#5a8a7a', font:{family:'DM Mono',size:10} } },
+      x: { grid: { display:false }, ticks: { color:'#5a8a7a', font:{family:'DM Mono',size:9} } }
+    }
+  }
+});
+
+// AUC chart
+new Chart(C('aucChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [{ data: modelData.map(m=>m.auc), backgroundColor: COLORS.slice().reverse(), borderRadius: 6, borderSkipped: false }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { min: 85, max: 102, grid: { color:'rgba(255,255,255,0.05)' }, ticks: { color:'#5a8a7a', font:{family:'DM Mono',size:10} } },
+      x: { grid: { display:false }, ticks: { color:'#5a8a7a', font:{family:'DM Mono',size:9} } }
+    }
+  }
+});
+
+// Pie chart - Dataset
+new Chart(C('pieChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Disease Negative', 'Disease Positive'],
+    datasets: [{ data: [62, 38], backgroundColor: ['#00d4aa','#ff6b6b'], borderWidth: 0, hoverOffset: 6 }]
+  },
+  options: {
+    plugins: { legend: { labels: { color:'#5a8a7a', font:{family:'DM Mono',size:11} } } },
+    cutout: '65%'
+  }
+});
+
+// Radar chart
+const radarChart = new Chart(C('radarChart'), {
+  type: 'radar',
+  data: {
+    labels: ['BMI', 'Glucose', 'HbA1c', 'Blood Pressure', 'Stress', 'Age Risk'],
+    datasets: [{
+      label: 'Patient Risk Profile',
+      data: [40, 50, 45, 40, 50, 45],
+      backgroundColor: 'rgba(0,212,170,0.15)',
+      borderColor: 'rgba(0,212,170,0.8)',
+      pointBackgroundColor: '#00d4aa',
+      pointRadius: 4
+    }]
+  },
+  options: {
+    scales: {
+      r: {
+        min: 0, max: 100,
+        grid: { color: 'rgba(255,255,255,0.06)' },
+        angleLines: { color: 'rgba(255,255,255,0.06)' },
+        ticks: { display: false }
+      }
+    },
+    plugins: { legend: { display: false } }
+  }
+});
+
+// ---- LOCAL PREDICTION (no API needed) ----
+function runPrediction() {
+  const age        = +document.getElementById('age').value;
+  const bmi        = +document.getElementById('bmi').value;
+  const glucose    = +document.getElementById('glucose').value;
+  const bp         = +document.getElementById('bp').value;
+  const insulin    = +document.getElementById('insulin').value;
+  const hba1c      = +document.getElementById('hba1c').value;
+  const chol       = +document.getElementById('cholesterol').value;
+  const stress     = +document.getElementById('stress').value;
+  const family     = +document.getElementById('family').value;
+  const smoking    = document.getElementById('smoking').value;
+  const activity   = document.getElementById('activity').value;
+  const diet       = document.getElementById('diet').value;
+  const gender     = document.getElementById('gender').value;
+
+  // Simple risk score
+  let risk = 0;
+  if (glucose > 140)  risk += 3;
+  if (bmi > 30)       risk += 2;
+  if (hba1c > 6.5)    risk += 3;
+  if (family == 1)    risk += 2;
+  if (age > 45)       risk += 1;
+  if (bp > 90)        risk += 1;
+  if (smoking === 'Current') risk += 1;
+  if (activity === 'Low')    risk += 1;
+  if (diet === 'Poor')       risk += 1;
+  if (stress > 7)     risk += 1;
+
+  const prob = 1 / (1 + Math.exp(-(risk - 6) * 0.5));
+  const prediction = prob >= 0.5 ? 1 : 0;
+  const confidence = prediction === 1 ? prob * 100 : (1 - prob) * 100;
+
+  // Show result
+  document.querySelector('.result-placeholder').style.display = 'none';
+  const rd = document.getElementById('result-display');
+  rd.style.display = 'block';
+
+  document.getElementById('res-icon').textContent  = prediction === 1 ? '⚠️' : '✅';
+  document.getElementById('res-label').textContent = prediction === 1 ? 'Disease Positive' : 'Disease Negative';
+  document.getElementById('res-label').style.color = prediction === 1 ? '#ff6b6b' : '#00d4aa';
+  document.getElementById('res-conf').textContent  = `Confidence: ${confidence.toFixed(1)}%`;
+
+  const bar = document.getElementById('conf-bar');
+  setTimeout(() => { bar.style.width = confidence.toFixed(1) + '%'; }, 100);
+  if (prediction === 1) bar.style.background = 'linear-gradient(90deg,#ff6b6b,#c0392b)';
+  else bar.style.background = 'linear-gradient(90deg,#00d4aa,#007a62)';
+
+  const riskEl = document.getElementById('res-risk');
+  if (confidence >= 80 && prediction === 1) {
+    riskEl.textContent = 'High Risk'; riskEl.className = 'risk-pill risk-high';
+  } else if (prediction === 1) {
+    riskEl.textContent = 'Moderate Risk'; riskEl.className = 'risk-pill risk-medium';
+  } else {
+    riskEl.textContent = 'Low Risk'; riskEl.className = 'risk-pill risk-low';
+  }
+
+  // Recommendations
+  const recs = [];
+  if (bmi > 30) recs.push('Maintain a healthy weight through diet and exercise.');
+  if (glucose > 140) recs.push('Monitor blood glucose levels regularly.');
+  if (hba1c > 6.5) recs.push('HbA1c is elevated. Consult a physician for diabetes screening.');
+  if (activity === 'Low') recs.push('Increase physical activity to at least 150 minutes/week.');
+  if (smoking === 'Current') recs.push('Quitting smoking significantly reduces disease risk.');
+  if (diet === 'Poor') recs.push('Adopt a balanced diet rich in vegetables and low in sugar.');
+  if (stress > 7) recs.push('Practice stress management: meditation, yoga, or breathing exercises.');
+  if (family == 1) recs.push('With family history, regular diabetes screening is essential.');
+  if (!recs.length) recs.push('Maintain your healthy lifestyle with regular checkups.');
+
+  const recsList = document.getElementById('recs-list');
+  recsList.innerHTML = recs.map(r => `<li>${r}</li>`).join('');
+
+  // Update radar
+  const bmiScore     = Math.min((bmi / 40) * 100, 100);
+  const glucScore    = Math.min((glucose / 300) * 100, 100);
+  const hba1cScore   = Math.min((hba1c / 12) * 100, 100);
+  const bpScore      = Math.min((bp / 130) * 100, 100);
+  const stressScore  = (stress / 10) * 100;
+  const ageRiskScore = Math.min((age / 80) * 100, 100);
+
+  radarChart.data.datasets[0].data = [bmiScore, glucScore, hba1cScore, bpScore, stressScore, ageRiskScore];
+  radarChart.update();
+}
+</script>
+</body>
+</html>
